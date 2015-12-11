@@ -61,7 +61,7 @@ module.exports = function (di, directory) {
         workflowInjectables: _.flatten([
             helper.requireGlob(__dirname + '/lib/workflow/stores/*.js'),
             helper.requireGlob(__dirname + '/lib/workflow/messengers/*.js'),
-            helper.requireGlob(__dirname + '/lib/workflow/task-graph.js')
+            helper.requireGlob(__dirname + '/lib/workflow/*.js'),
         ])
     };
 };
