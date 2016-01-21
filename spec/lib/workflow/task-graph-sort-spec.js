@@ -152,7 +152,7 @@ describe("Task Graph sorting", function () {
             .to.throw(/Detected a cyclic graph with tasks test2 and test3/);
     });
 
-    it('should mark terminal tasks', function() {
+    it('should set terminal tasks correctly for the "finished" catch-all state', function() {
         var graph = {
             tasks: {
                 '1': { },
@@ -163,12 +163,21 @@ describe("Task Graph sorting", function () {
         };
         graph = Object.assign(graph, TaskGraph.prototype);
 
-        graph.detectCyclesAndMarkTerminalTasks();
-        expect(graph.tasks['3']).to.have.property('terminalOnState').that.equals('finished');
-        expect(graph.tasks['4']).to.have.property('terminalOnState').that.equals('finished');
+        graph.detectCyclesAndSetTerminalTasks();
+
+        expect(graph.tasks['1']).to.have.property('terminalOnStates');
+        expect(graph.tasks['1'].terminalOnStates).to.deep.equal([]);
+        expect(graph.tasks['2']).to.have.property('terminalOnStates');
+        expect(graph.tasks['2'].terminalOnStates).to.deep.equal([]);
+        expect(graph.tasks['3']).to.have.property('terminalOnStates');
+        expect(graph.tasks['3'].terminalOnStates.sort())
+            .to.deep.equal(Constants.FinishedTaskStates.sort());
+        expect(graph.tasks['4']).to.have.property('terminalOnStates');
+        expect(graph.tasks['4'].terminalOnStates.sort())
+            .to.deep.equal(Constants.FinishedTaskStates.sort());
     });
 
-    it('should mark branched terminal tasks', function() {
+    it('should set terminal nodes when there are failure branches', function() {
         var graph = {
             tasks: {
                 '1': { },
@@ -177,7 +186,7 @@ describe("Task Graph sorting", function () {
         };
 
         graph = Object.assign(graph, TaskGraph.prototype);
-        graph.detectCyclesAndMarkTerminalTasks();
+        graph.detectCyclesAndSetTerminalTasks();
 
         expect(graph.tasks['1']).to.have.property('terminalOnStates');
         expect(graph.tasks['1'].terminalOnStates.sort()).to.deep.equal([
@@ -190,7 +199,7 @@ describe("Task Graph sorting", function () {
             Constants.FinishedTaskStates.sort());
     });
 
-    it('should mark deeply branched terminal tasks', function() {
+    it('should set terminal nodes when there are deep failure branches', function() {
         var graph = {
             tasks: {
                 '1': { },
@@ -200,12 +209,41 @@ describe("Task Graph sorting", function () {
         };
 
         graph = Object.assign(graph, TaskGraph.prototype);
-        graph.detectCyclesAndMarkTerminalTasks();
+        graph.detectCyclesAndSetTerminalTasks();
 
         expect(graph.tasks['1']).to.have.property('terminalOnStates');
         expect(graph.tasks['1'].terminalOnStates.sort()).to.deep.equal([
             Constants.TaskStates.Cancelled,
             Constants.TaskStates.Succeeded,
+            Constants.TaskStates.Timeout
+        ]);
+        expect(graph.tasks['2']).to.have.property('terminalOnStates');
+        expect(graph.tasks['2'].terminalOnStates.sort()).to.deep.equal([
+            Constants.TaskStates.Cancelled,
+            Constants.TaskStates.Succeeded,
+            Constants.TaskStates.Timeout
+        ]);
+        expect(graph.tasks['3']).to.have.property('terminalOnStates');
+        expect(graph.tasks['3'].terminalOnStates.sort()).to.deep.equal(
+            Constants.FinishedTaskStates.sort());
+    });
+
+    it('should set terminal nodes when there are failure and success branches', function() {
+        var graph = {
+            tasks: {
+                '1': { },
+                '2': { waitingOn: { '1': 'failed' } },
+                '3': { waitingOn: { '2': 'failed' } },
+                '4': { waitingOn: { '1': 'succeeded' } }
+            }
+        };
+
+        graph = Object.assign(graph, TaskGraph.prototype);
+        graph.detectCyclesAndSetTerminalTasks();
+
+        expect(graph.tasks['1']).to.have.property('terminalOnStates');
+        expect(graph.tasks['1'].terminalOnStates.sort()).to.deep.equal([
+            Constants.TaskStates.Cancelled,
             Constants.TaskStates.Timeout
         ]);
         expect(graph.tasks['2']).to.have.property('terminalOnStates');
