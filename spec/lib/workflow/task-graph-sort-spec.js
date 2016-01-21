@@ -17,101 +17,6 @@ describe("Task Graph sorting", function () {
         TaskGraph = helper.injector.get('TaskGraph.TaskGraph');
     });
 
-    it('should topologically sort linear tasks', function() {
-        var graph = {
-            tasks: {
-                '1': { },
-                '2': { waitingOn: { '1': 'finished' } },
-                '3': { waitingOn: { '2': 'finished' } }
-            }
-        };
-        graph = Object.assign(graph, TaskGraph.prototype);
-
-        var output = graph.topologicalSortTasks();
-        expect(output).to.deep.equal([['1'], ['2'], ['3']]);
-    });
-
-    it('should topologically sort parallel tasks', function() {
-        var graph = {
-            tasks: {
-                '1': { },
-                '2': { },
-                '3': { waitingOn: { '2': 'finished' } }
-            },
-        };
-        graph = Object.assign(graph, TaskGraph.prototype);
-
-        var output = graph.topologicalSortTasks();
-        expect(output).to.deep.equal([['1', '2'], ['3']]);
-    });
-
-    it('should topologically sort tasks with multiple dependencies', function() {
-        var graph = {
-            tasks: {
-                '1': { },
-                'A': { },
-                '2': { waitingOn: { '1': 'finished' } },
-                '3': { waitingOn: {
-                        '2': 'finished',
-                        'A': 'finished'
-                    }
-                }
-            }
-        };
-        graph = Object.assign(graph, TaskGraph.prototype);
-
-        var output = graph.topologicalSortTasks();
-        expect(output).to.deep.equal([['1', 'A'], ['2'], ['3']]);
-    });
-
-    it('should topologically sort a graph with a mix of task states', function() {
-        var graph = {
-            tasks: {
-                '1': { state: Constants.TaskStates.Succeeded },
-                '2': { state: Constants.TaskStates.Failed },
-                '3': { waitingOn: { '1': 'finished' } },
-                '4': { waitingOn: { '2': Constants.TaskStates.Failed } }
-            }
-        };
-        graph = Object.assign(graph, TaskGraph.prototype);
-
-        var output = graph.topologicalSortTasks();
-        expect(output).to.deep.equal([['3', '4']]);
-    });
-
-    it('should topologically sort a complex graph', function() {
-        var graph = {
-            tasks: {
-                '1': { },
-                '2': { waitingOn: { '1': 'finished' } },
-                '3': { waitingOn: { '2': 'finished' } },
-                '4': { waitingOn: { '2': 'finished' } },
-                '5': { waitingOn: {
-                        '3': 'finished',
-                        '6': 'finished'
-                    }
-                },
-                '6': { waitingOn: { '4': 'finished' } },
-                '7': { },
-                '8': { waitingOn: {
-                        '4': 'finished',
-                        '7': 'finished'
-                    }
-                },
-            }
-        };
-        graph = Object.assign(graph, TaskGraph.prototype);
-
-        var output = graph.topologicalSortTasks();
-        expect(output).to.deep.equal([
-            ['1', '7'],
-            ['2'],
-            ['3', '4'],
-            ['6', '8'],
-            ['5']
-        ]);
-    });
-
     it('should throw on a cyclic task graph', function() {
         var graph = {
             tasks: {
@@ -127,7 +32,7 @@ describe("Task Graph sorting", function () {
         };
         graph = Object.assign(graph, TaskGraph.prototype);
 
-        expect(graph.topologicalSortTasks.bind(graph))
+        expect(graph.detectCyclesAndSetTerminalTasks.bind(graph))
             .to.throw(/Detected a cyclic graph with tasks test2 and test3/);
     });
 
@@ -148,7 +53,7 @@ describe("Task Graph sorting", function () {
         };
         graph = Object.assign(graph, TaskGraph.prototype);
 
-        expect(graph.topologicalSortTasks.bind(graph))
+        expect(graph.detectCyclesAndSetTerminalTasks.bind(graph))
             .to.throw(/Detected a cyclic graph with tasks test2 and test3/);
     });
 
@@ -255,5 +160,80 @@ describe("Task Graph sorting", function () {
         expect(graph.tasks['3']).to.have.property('terminalOnStates');
         expect(graph.tasks['3'].terminalOnStates.sort()).to.deep.equal(
             Constants.FinishedTaskStates.sort());
+    });
+
+    it('should set terminal nodes when there are failure and success branches', function() {
+        var graph = {
+            tasks: {
+                '1': { },
+                '2': { waitingOn: { '1': 'failed' } },
+                '3': { waitingOn: { '2': 'failed' } },
+                '4': { waitingOn: { '1': 'succeeded' } }
+            }
+        };
+
+        graph = Object.assign(graph, TaskGraph.prototype);
+        graph.detectCyclesAndSetTerminalTasks();
+
+        expect(graph.tasks['1']).to.have.property('terminalOnStates');
+        expect(graph.tasks['1'].terminalOnStates.sort()).to.deep.equal([
+            Constants.TaskStates.Cancelled,
+            Constants.TaskStates.Timeout
+        ]);
+        expect(graph.tasks['2']).to.have.property('terminalOnStates');
+        expect(graph.tasks['2'].terminalOnStates.sort()).to.deep.equal([
+            Constants.TaskStates.Cancelled,
+            Constants.TaskStates.Succeeded,
+            Constants.TaskStates.Timeout
+        ]);
+        expect(graph.tasks['3']).to.have.property('terminalOnStates');
+        expect(graph.tasks['3'].terminalOnStates.sort()).to.deep.equal(
+            Constants.FinishedTaskStates.sort());
+    });
+
+    it('should mark terminal states correctly for a complex graph', function() {
+        var graph = {
+            tasks: {
+                '1': { },
+                '2': { waitingOn: { '1': 'finished' } },
+                '3': { waitingOn: { '2': 'succeeded' } },
+                '4': { waitingOn: { '2': ['failed', 'timeout'] } },
+                '5': { waitingOn: {
+                        '3': 'finished',
+                        '6': 'finished'
+                    }
+                },
+                '6': { waitingOn: { '4': 'finished' } },
+                '7': { },
+                '8': { waitingOn: {
+                        '4': 'finished',
+                        '7': 'finished'
+                    }
+                },
+            }
+        };
+        graph = Object.assign(graph, TaskGraph.prototype);
+        graph.detectCyclesAndSetTerminalTasks();
+
+        _.forEach(['1', '3', '4', '7'], function(label) {
+            expect(graph.tasks[label]).to.have.property('terminalOnStates');
+            expect(graph.tasks[label].terminalOnStates).to.deep.equal([]);
+        });
+
+        expect(graph.tasks['2']).to.have.property('terminalOnStates');
+        expect(graph.tasks['2'].terminalOnStates).to.deep.equal([
+            Constants.TaskStates.Cancelled
+        ]);
+
+        expect(graph.tasks['6']).to.have.property('terminalOnStates');
+        expect(graph.tasks['6'].terminalOnStates).to.deep.equal([]);
+
+        expect(graph.tasks['5']).to.have.property('terminalOnStates');
+        expect(graph.tasks['5'].terminalOnStates.sort())
+            .to.deep.equal(Constants.FinishedTaskStates.sort());
+
+        expect(graph.tasks['8']).to.have.property('terminalOnStates');
+        expect(graph.tasks['8'].terminalOnStates.sort())
+            .to.deep.equal(Constants.FinishedTaskStates.sort());
     });
 });
