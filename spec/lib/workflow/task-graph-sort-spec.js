@@ -236,4 +236,20 @@ describe("Task Graph sorting", function () {
         expect(graph.tasks['8'].terminalOnStates.sort())
             .to.deep.equal(Constants.FinishedTaskStates.sort());
     });
+
+    it('should remove redundant waitOn states if "finished" is specified', function() {
+        var graph = {
+            tasks: {
+                '1': { },
+                '2': { waitingOn: { '1': ['finished', 'failed'] } },
+            }
+        };
+
+        graph = Object.assign(graph, TaskGraph.prototype);
+        graph.detectCyclesAndSetTerminalTasks();
+        expect(graph.tasks['2'].waitingOn['1']).to.deep.equal(['finished']);
+
+        expect(graph.tasks['1']).to.have.property('terminalOnStates');
+        expect(graph.tasks['1'].terminalOnStates.sort()).to.deep.equal([]);
+    });
 });
