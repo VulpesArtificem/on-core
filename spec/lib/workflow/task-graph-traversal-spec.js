@@ -1,5 +1,4 @@
-// Copyright 2015-2016, EMC, Inc.
-/* jshint node:true */
+// Copyright 2016, EMC, Inc.
 
 'use strict';
 
@@ -55,6 +54,44 @@ describe("Task Graph sorting", function () {
 
         expect(graph.detectCyclesAndSetTerminalTasks.bind(graph))
             .to.throw(/Detected a cyclic graph with tasks test2 and test3/);
+    });
+
+    it('should throw on cyclic, isolated nodes', function() {
+        var graph = {
+            tasks: {
+                '1': {
+                    'injectableName': 'test1'
+                },
+                '2': {
+                    'injectableName': 'test2',
+                    'waitingOn': {
+                         '1': 'finished'
+                    }
+                },
+                'isolated-1': {
+                    'injectableName': 'test1',
+                    'waitingOn': {
+                         'isolated-3': 'finished'
+                    }
+                },
+                'isolated-2': {
+                    'injectableName': 'test2',
+                    'waitingOn': {
+                         'isolated-1': 'finished'
+                    }
+                },
+                'isolated-3': {
+                    'injectableName': 'test3',
+                    'waitingOn': {
+                         'isolated-2': 'finished'
+                    }
+                }
+            }
+        };
+        graph = Object.assign(graph, TaskGraph.prototype);
+
+        expect(graph.detectCyclesAndSetTerminalTasks.bind(graph))
+            .to.throw(/Detected a cyclic graph with tasks test1 and test2/);
     });
 
     it('should set terminal tasks correctly for the "finished" catch-all state', function() {
