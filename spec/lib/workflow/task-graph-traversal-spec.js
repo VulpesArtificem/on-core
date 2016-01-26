@@ -16,6 +16,21 @@ describe("Task Graph sorting", function () {
         TaskGraph = helper.injector.get('TaskGraph.TaskGraph');
     });
 
+    it('should throw on a missing task dependency', function() {
+        var graph = {
+            tasks: {
+                '1': { },
+                '2': { injectableName: 'test2',
+                        waitingOn: { 'NA': 'finished' }
+                }
+            }
+        };
+        graph = Object.assign(graph, TaskGraph.prototype);
+
+        expect(graph.detectCyclesAndSetTerminalTasks.bind(graph))
+            .to.throw(/Graph does not contain task with ID NA/);
+    });
+
     it('should throw on a cyclic task graph', function() {
         var graph = {
             tasks: {

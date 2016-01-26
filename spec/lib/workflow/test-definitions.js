@@ -12,9 +12,35 @@ module.exports.get = function() {
               waitOn: { 'test-1': 'finished' } }
         ]
     };
+    var graphDefinitionInline = {
+        friendlyName: 'Test Graph',
+        injectableName: 'Graph.test',
+        tasks: [
+            { label: 'test-1',
+              taskDefinition: {
+                friendlyName: 'Test task',
+                implementsTask: 'Task.Base.test',
+                injectableName: 'Task.test',
+                options: { option1: 1, option2: 2, option3: 3 },
+                properties: { } }
+            }
+        ]
+    };
     var baseTask = {
         friendlyName: 'Base test task',
         injectableName: 'Task.Base.test',
+        runJob: 'Job.test',
+        requiredOptions: [
+            'option1',
+            'option2',
+            'option3',
+        ],
+        requiredProperties: {},
+        properties: {}
+    };
+    var baseTaskEmpty = {
+        friendlyName: 'Test task empty',
+        injectableName: 'Task.Base.test-empty',
         runJob: 'Job.test',
         requiredOptions: [],
         requiredProperties: {},
@@ -171,10 +197,78 @@ module.exports.get = function() {
             }
         ]
     };
+    var graphDefinitionOptions = {
+        injectableName: 'Graph.testGraphOptions',
+        friendlyName: 'Test Graph Options',
+        options: {
+            defaults: {
+                option1: 'same for all',
+                option2: 'same for all',
+                'optionNonExistant': 'not in any'
+            },
+            'test-2': {
+                overrideOption: 'overridden for test-2',
+                option2: 'overridden default option for test-2'
+            },
+            'test-3': {
+                inlineOptionOverridden: 'overridden inline option for test-3'
+            },
+            'test-4': {
+                nonRequiredOption: 'add an option to an empty base task'
+            }
+        },
+        tasks: [
+            {
+                label: 'test-1',
+                taskName: 'Task.test',
+                optionOverrides: {
+                    'testName': 'firstTask'
+                }
+            },
+            {
+                label: 'test-2',
+                taskName: 'Task.test',
+                optionOverrides: {
+                    'testName': 'secondTask',
+                    overrideOption: undefined
+                },
+                waitOn: {
+                    'test-1': 'finished'
+                }
+            },
+            {
+                label: 'test-3',
+                taskDefinition: {
+                    friendlyName: 'Test Inline Task',
+                    injectableName: 'Task.test.inline-task',
+                    implementsTask: 'Task.Base.test',
+                    options: {
+                        option3: 3,
+                        inlineOption: 3,
+                        inlineOptionOverridden: undefined,
+                        testName: 'thirdTask'
+                    },
+                    properties: {}
+                }
+            },
+            {
+                label: 'test-4',
+                taskDefinition: {
+                    friendlyName: 'Test Inline Task no options',
+                    injectableName: 'Task.test.inline-task-no-opts',
+                    implementsTask: 'Task.Base.test-empty',
+                    options: {},
+                    properties: {}
+                }
+            }
+        ]
+    };
 
     return {
         graphDefinition: graphDefinition,
+        graphDefinitionInline: graphDefinitionInline,
         baseTask: baseTask,
+        baseTaskEmpty: baseTaskEmpty,
         testTask: testTask,
         baseTask1: baseTask1,
         baseTask2: baseTask2,
@@ -183,6 +277,7 @@ module.exports.get = function() {
         testTask2: testTask2,
         testTask3: testTask3,
         graphDefinitionValid: graphDefinitionValid,
-        graphDefinitionInvalid: graphDefinitionInvalid
+        graphDefinitionInvalid: graphDefinitionInvalid,
+        graphDefinitionOptions: graphDefinitionOptions
     };
 };
