@@ -24,14 +24,13 @@ describe("Task protocol functions", function() {
 
         it("should subscribe to task.run and receive run events", function(done) {
             var self = this,
-                uuid = helper.injector.get('uuid'),
-                taskId = uuid.v4(),
-                args = 'someArgs';
+                domain = 'default',
+                data = { test: 'test' };
 
-            self.task.subscribeRun(taskId, function(_data) {
+            self.task.subscribeRun(domain, function(_data) {
                 try {
                     expect(_data).to.be.ok;
-                    expect(_data).to.equal(args);
+                    expect(_data).to.deep.equal(data);
                     done();
                 } catch(err) {
                     done(err);
@@ -39,8 +38,7 @@ describe("Task protocol functions", function() {
             }).then(function(subscription) {
                 expect(subscription).to.be.ok;
                 testSubscription = subscription;
-
-                return self.task.run(taskId, args);
+                return self.task.run(domain, data);
             }).catch(function(err) {
                 done(err);
             });
@@ -67,7 +65,7 @@ describe("Task protocol functions", function() {
                 errName = 'testerrname',
                 errMessage = 'test message';
 
-            self.task.subscribeCancel(taskId, function(_data) {
+            self.task.subscribeCancel(function(_data) {
                 try {
                     expect(_data).to.be.an.instanceof(Error);
                     expect(_data).to.have.property('message').that.equals(errMessage);
@@ -78,7 +76,6 @@ describe("Task protocol functions", function() {
             }).then(function(subscription) {
                 expect(subscription).to.be.ok;
                 testSubscription = subscription;
-
                 return self.task.cancel(taskId, errName, errMessage);
             }).catch(function(err) {
                 done(err);
@@ -92,7 +89,7 @@ describe("Task protocol functions", function() {
                 errName = Errors.TaskTimeoutError.name,
                 errMessage = 'test message';
 
-            self.task.subscribeCancel(taskId, function(_data) {
+            self.task.subscribeCancel(function(_data) {
                 try {
                     expect(_data).to.be.an.instanceof(Errors.TaskTimeoutError);
                     expect(_data).to.have.property('message').that.equals(errMessage);
@@ -103,7 +100,6 @@ describe("Task protocol functions", function() {
             }).then(function(subscription) {
                 expect(subscription).to.be.ok;
                 testSubscription = subscription;
-
                 return self.task.cancel(taskId, errName, errMessage);
             }).catch(function(err) {
                 done(err);

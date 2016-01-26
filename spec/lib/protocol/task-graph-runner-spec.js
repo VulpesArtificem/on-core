@@ -354,57 +354,29 @@ describe("TaskGraph Runner protocol functions", function () {
     });
 
     describe("runTaskGraph", function() {
-        it("should subscribe and receive runTaskGraph results", function() {
+        it("should subscribe and receive runTaskGraph results", function(done) {
             var self = this,
-                testFilter = { foo: 'bar'},
-                testData = { abc: '123' };
+                domain = 'default',
+                data = {
+                    name: 'testgraph',
+                    options: { defaults: {} },
+                    target: 'testnode'
+                };
 
-            return self.taskgraphrunner.subscribeRunTaskGraph(function(filter) {
-                expect(filter).to.deep.equal(testFilter);
-                return testData;
+            return self.taskgraphrunner.subscribeRunTaskGraph(domain, function(_data) {
+                try {
+                    expect(_data).to.deep.equal(data);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
             }).then(function(subscription) {
                 expect(subscription).to.be.ok;
 
                 testSubscription = subscription;
-                return self.taskgraphrunner.runTaskGraph(testFilter);
-            }).then(function(data) {
-                expect(data).to.deep.equal(testData);
+                return self.taskgraphrunner.runTaskGraph(
+                    domain, data.name, data.options, data.target);
             });
-        });
-
-        it("should subscribe and receive runTaskGraph results without a filter", function() {
-            var self = this,
-                testData = { abc: '123' };
-
-            return self.taskgraphrunner.subscribeRunTaskGraph(function(filter) {
-                expect(filter).to.be.undefined;
-                return testData;
-            }).then(function(subscription) {
-                expect(subscription).to.be.ok;
-
-                testSubscription = subscription;
-                return self.taskgraphrunner.runTaskGraph();
-            }).then(function(data) {
-                expect(data).to.deep.equal(testData);
-            });
-        });
-
-        it("should subscribe and receive runTaskGraph failures", function() {
-            var self = this,
-                testFilter = { foo: 'bar'},
-                sampleError = new Error('someError');
-
-            var ErrorEvent = helper.injector.get('ErrorEvent');
-
-            return self.taskgraphrunner.subscribeRunTaskGraph(function(filter) {
-                expect(filter).to.deep.equal(testFilter);
-                throw sampleError;
-            }).then(function(subscription) {
-                expect(subscription).to.be.ok;
-                testSubscription = subscription;
-
-                return self.taskgraphrunner.runTaskGraph(testFilter);
-            }).should.be.rejectedWith(ErrorEvent, 'someError');
         });
     });
 

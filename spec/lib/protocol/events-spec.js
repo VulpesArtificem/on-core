@@ -160,13 +160,18 @@ describe("Event protocol subscribers", function () {
         });
 
         it("should publish and subscribe to TaskFinished messages", function (done) {
-            //NOTE: no matching internal code to listen for these events
+            // NOTE: no matching internal code to listen for these events
             var self = this,
                 uuid = helper.injector.get('uuid'),
-                taskId = uuid.v4(),
-                data = {foo: 'bar'};
+                domain = 'default',
+                data = {
+                    taskId: uuid.v4(),
+                    graphId: uuid.v4(),
+                    state: 'succeeded',
+                    terminalOnStates: ['failed', 'timeout']
+                };
 
-            self.events.subscribeTaskFinished(taskId, function (_data) {
+            self.events.subscribeTaskFinished(domain, function (_data) {
                 try {
                     expect(_data).to.deep.equal(data);
                     done();
@@ -177,7 +182,8 @@ describe("Event protocol subscribers", function () {
                 expect(subscription).to.be.ok;
                 testSubscription = subscription;
 
-                return self.events.publishTaskFinished(taskId, data);
+                return self.events.publishTaskFinished(
+                    domain, data.taskId, data.graphId, data.state, data.terminalOnStates);
             }).catch(function (err) {
                 done(err);
             });
