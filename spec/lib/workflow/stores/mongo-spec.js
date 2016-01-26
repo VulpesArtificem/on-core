@@ -2,7 +2,7 @@
 
 'use strict';
 
-describe('Task Graph mongo store', function () {
+describe('Task Graph mongo store interface', function () {
     var mongo;
     var waterline;
     var Constants;

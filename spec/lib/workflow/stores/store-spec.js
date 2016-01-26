@@ -2,7 +2,7 @@
 
 'use strict';
 
-describe('Task Graph Store', function () {
+describe('Task Graph Store factory', function () {
     var mongo = {};
     var configuration = {
         get: sinon.stub().withArgs('taskgraph-store').returns('mongo')
