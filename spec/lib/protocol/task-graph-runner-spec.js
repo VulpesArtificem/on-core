@@ -356,16 +356,13 @@ describe("TaskGraph Runner protocol functions", function () {
     describe("runTaskGraph", function() {
         it("should subscribe and receive runTaskGraph results", function(done) {
             var self = this,
+                uuid = helper.injector.get('uuid'),
                 domain = 'default',
-                data = {
-                    name: 'testgraph',
-                    options: { defaults: {} },
-                    target: 'testnode'
-                };
+                graphId = uuid.v4();
 
             return self.taskgraphrunner.subscribeRunTaskGraph(domain, function(_data) {
                 try {
-                    expect(_data).to.deep.equal(data);
+                    expect(_data).to.deep.equal({ graphId: graphId });
                     done();
                 } catch (e) {
                     done(e);
@@ -374,8 +371,7 @@ describe("TaskGraph Runner protocol functions", function () {
                 expect(subscription).to.be.ok;
 
                 testSubscription = subscription;
-                return self.taskgraphrunner.runTaskGraph(
-                    domain, data.name, data.options, data.target);
+                return self.taskgraphrunner.runTaskGraph(graphId, domain);
             });
         });
     });
