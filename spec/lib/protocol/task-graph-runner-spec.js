@@ -379,17 +379,18 @@ describe("TaskGraph Runner protocol functions", function () {
     describe("cancelTaskGraph", function() {
         it("should subscribe and receive cancelTaskGraph results", function() {
             var self = this,
-                testFilter = { foo: 'bar'},
+                uuid = helper.injector.get('uuid'),
+                testId = uuid.v4(),
                 testData = { abc: '123' };
 
-            return self.taskgraphrunner.subscribeCancelTaskGraph(function(filter) {
-                expect(filter).to.deep.equal(testFilter);
+            return self.taskgraphrunner.subscribeCancelTaskGraph(function(id) {
+                expect(id).to.deep.equal({graphId: testId});
                 return testData;
             }).then(function(subscription) {
                 expect(subscription).to.be.ok;
 
                 testSubscription = subscription;
-                return self.taskgraphrunner.cancelTaskGraph(testFilter);
+                return self.taskgraphrunner.cancelTaskGraph(testId);
             }).then(function(data) {
                 expect(data).to.deep.equal(testData);
             });
@@ -397,19 +398,20 @@ describe("TaskGraph Runner protocol functions", function () {
 
         it("should subscribe and receive cancelTaskGraph failures", function() {
             var self = this,
-                testFilter = { foo: 'bar'},
+                uuid = helper.injector.get('uuid'),
+                testId = uuid.v4(),
                 sampleError = new Error('someError');
 
             var ErrorEvent = helper.injector.get('ErrorEvent');
 
-            return self.taskgraphrunner.subscribeCancelTaskGraph(function(filter) {
-                expect(filter).to.deep.equal(testFilter);
+            return self.taskgraphrunner.subscribeCancelTaskGraph(function(id) {
+                expect(id).to.deep.equal({graphId: testId});
                 throw sampleError;
             }).then(function(subscription) {
                 expect(subscription).to.be.ok;
                 testSubscription = subscription;
 
-                return self.taskgraphrunner.cancelTaskGraph(testFilter);
+                return self.taskgraphrunner.cancelTaskGraph(testId);
             }).should.be.rejectedWith(ErrorEvent, 'someError');
         });
     });

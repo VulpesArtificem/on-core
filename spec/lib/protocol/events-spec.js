@@ -168,6 +168,7 @@ describe("Event protocol subscribers", function () {
                     taskId: uuid.v4(),
                     graphId: uuid.v4(),
                     state: 'succeeded',
+                    context: {},
                     terminalOnStates: ['failed', 'timeout']
                 };
 
@@ -183,7 +184,8 @@ describe("Event protocol subscribers", function () {
                 testSubscription = subscription;
 
                 return self.events.publishTaskFinished(
-                    domain, data.taskId, data.graphId, data.state, data.terminalOnStates);
+                    domain, data.taskId, data.graphId,
+                    data.state, data.context, data.terminalOnStates);
             }).catch(function (err) {
                 done(err);
             });
